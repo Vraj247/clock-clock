@@ -18,7 +18,7 @@
             height: 100%;
             scroll-behavior: none;
             font-family: Arial, sans-serif;
-            background-color: #D3D3D3;
+            transition: background-color 0.5s, color 0.5s;
         }
 
         canvas {
@@ -36,6 +36,7 @@
     <script>
         let riveInstance, secondsInput, minutesInput, hoursInput;
 
+        // Function to update the clock inputs
         function updateClockInputs() {
             const now = new Date(); // Get the current time including milliseconds
             let hours = now.getHours() + now.getMinutes() / 60; // Extract hours
@@ -52,24 +53,57 @@
             if (secondsInput) {
                 secondsInput.value = seconds; // This now includes milliseconds for smoother movement
             }
+
             window.requestAnimationFrame(updateClockInputs);
         }
 
+        // Function to update the day/night mode
+        function updateDayNightMode() {
+            const now = new Date();
+            const hours = now.getHours();
+            const isDayTime = hours >= 6 && hours < 18; // Define day time as 6 AM to 6 PM
+
+            if (isDayTime) {
+                document.body.style.backgroundColor = '#D3D3D3'; // Light grey for day
+                document.body.style.color = '#000000'; // Black text for day
+            } else {
+                document.body.style.backgroundColor = '#0e0e0e'; // Black for night
+                document.body.style.color = '#FFFFFF'; // White text for night
+            }
+        }
+
+        // Initialize the Rive instance
         riveInstance = new rive.Rive({
-            src: './riv/clock', // Ensure this URL is correct
+            src: './riv/clock.riv', // Ensure this URL is correct
             canvas: document.getElementById('riveCanvas'),
             autoplay: true,
             stateMachines: 'State Machine 1', // The name of your state machine
             onLoad: () => {
-                // Get the inputs via the name of the state machine
-                const inputs = riveInstance.stateMachineInputs('State Machine 1');
-                // Find the 'Hours', 'Minutes', and 'Seconds' inputs
-                hoursInput = inputs.find(i => i.name === 'hr');
-                minutesInput = inputs.find(i => i.name === 'min');
-                secondsInput = inputs.find(i => i.name === 'sec');
-                riveInstance.resizeDrawingSurfaceToCanvas();
+                try {
+                    // Get the inputs via the name of the state machine
+                    const inputs = riveInstance.stateMachineInputs('State Machine 1');
+                    // Find the 'Hours', 'Minutes', and 'Seconds' inputs
+                    hoursInput = inputs.find(i => i.name === 'hr');
+                    minutesInput = inputs.find(i => i.name === 'min');
+                    secondsInput = inputs.find(i => i.name === 'sec');
 
-                window.requestAnimationFrame(updateClockInputs);
+                    // Resize the drawing surface to fit the canvas
+                    riveInstance.resizeDrawingSurfaceToCanvas();
+
+                    // Start the clock updates
+                    window.requestAnimationFrame(updateClockInputs);
+
+                    // Update the day/night mode immediately
+                    updateDayNightMode();
+
+                    // Set an interval to update the day/night mode every minute
+                    setInterval(updateDayNightMode, 60000);
+                } catch (error) {
+                    console.error('Error initializing Rive inputs:', error);
+                }
+            },
+            onError: (error) => {
+                console.error('Error loading Rive file:', error);
             }
         });
     </script>
